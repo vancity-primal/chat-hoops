@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Hoops — Setup</title>
+    <style>
+        @font-face {
+            font-family: 'Dharma Gothic';
+            src: url('fonts/dharma-gothic-m-ex-bold.ttf') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Ropa Sans Pro';
+            src: url('fonts/ropa-sans-pro-regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top right, rgba(255,255,255,0), rgba(0,0,0,1)),
+                linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(255,255,255,0) 30%),
+                linear-gradient(85deg, rgba(10,10,50,1) 14%, rgba(27,22,55,1) 35%, rgba(71,53,136,1) 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 28px 24px 64px;
+            font-family: 'Ropa Sans Pro', sans-serif;
+            color: white;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-family: 'Dharma Gothic', sans-serif;
+            font-size: 80px;
+            color: #f5ac3e;
+            margin: 0;
+            line-height: 1;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.6);
+            margin: 8px 0 0;
+        }
+
+        .card {
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 36px 40px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .field-group {
+            margin-bottom: 32px;
+        }
+
+        .field-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label.field-label {
+            display: block;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #f5ac3e;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            font-family: 'Ropa Sans Pro', sans-serif;
+            font-size: 18px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        input[type="text"]:focus {
+            border-color: #f5ac3e;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .radio-option:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .radio-option input[type="radio"] {
+            accent-color: #f5ac3e;
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+
+        .radio-option.selected {
+            background: rgba(245, 172, 62, 0.1);
+            border-color: rgba(245, 172, 62, 0.4);
+        }
+
+        .radio-label {
+            font-size: 17px;
+            color: white;
+            flex: 1;
+        }
+
+        .radio-desc {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.45);
+            margin-top: 2px;
+        }
+
+        .sub-input-wrapper {
+            margin-top: 10px;
+            display: none;
+        }
+
+        .sub-input-wrapper.visible {
+            display: block;
+        }
+
+        .sub-input-wrapper input[type="text"] {
+            font-size: 16px;
+        }
+
+        .gradient-swatches {
+            flex-wrap: wrap;
+            display: flex;
+            gap: 8px;
+        }
+
+        #gradientSwatchWrapper {
+            margin: 6px 0;
+        }
+
+        .gradient-swatch {
+            width: 64px;
+            height: 38px;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.15s, transform 0.1s;
+            flex-shrink: 0;
+        }
+
+        .gradient-swatch:hover {
+            transform: scale(1.06);
+        }
+
+        .gradient-swatch.selected {
+            border-color: white;
+        }
+
+        .field-tip {
+            margin: 12px 0 0;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.38);
+            line-height: 1.5;
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .tip-label {
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 1.5px;
+            color: rgba(255, 255, 255, 0.45);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 3px;
+            padding: 1px 5px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* Output section */
+        .output-section {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 28px;
+        }
+
+        .btn-start {
+            display: block;
+            text-align: center;
+            text-decoration: none;
+            width: 100%;
+            font-size: 22px;
+            padding: 16px;
+            letter-spacing: 1px;
+            pointer-events: none;
+            opacity: 0.35;
+        }
+
+        .btn-start.active {
+            pointer-events: auto;
+            opacity: 1;
+        }
+
+        .obs-hint {
+            margin: 36px 0 0;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.35);
+            text-align: center;
+        }
+
+        .url-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .url-box {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-family: monospace;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #f5ac3e;
+            transition: opacity 0.2s;
+        }
+
+        .url-box.empty {
+            color: rgba(255, 255, 255, 0.25);
+            font-style: italic;
+            font-family: 'Ropa Sans Pro', sans-serif;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 11px 22px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Ropa Sans Pro', sans-serif;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.15s, opacity 0.15s;
+        }
+
+        .btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #f5ac3e;
+            color: #0a0a1a;
+            font-weight: bold;
+        }
+
+        .btn-primary:not(:disabled):hover {
+            background: #ffc25a;
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+
+        .btn-secondary:not(:disabled):hover {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .footer-note {
+            margin-top: 20px;
+            font-size: 13px;
+            color: rgba(255,255,255,0.4);
+            text-align: center;
+        }
+
+        .footer-note code {
+            color: rgba(255,255,255,0.6);
+            background: rgba(255,255,255,0.08);
+            padding: 1px 5px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>CHAT HOOPS</h1>
+    </header>
+
+    <div class="card">
+
+        <!-- Channel name -->
+        <div class="field-group">
+            <label class="field-label" for="channelInput">Twitch Channel</label>
+            <input
+                type="text"
+                id="channelInput"
+                placeholder="e.g. xqc"
+                autocomplete="off"
+                spellcheck="false"
+            >
+        </div>
+
+        <!-- Trigger -->
+        <div class="field-group">
+            <label class="field-label">Shot Trigger</label>
+            <div class="radio-group" id="triggerGroup">
+
+                <label class="radio-option selected">
+                    <input type="radio" name="trigger" value="all" checked>
+                    <div>
+                        <div class="radio-label">Every message</div>
+                        <div class="radio-desc">Any chat message throws a coin</div>
+                    </div>
+                </label>
+
+                <label class="radio-option">
+                    <input type="radio" name="trigger" value="emote">
+                    <div>
+                        <div class="radio-label">Emotes only</div>
+                        <div class="radio-desc">Only messages that contain a Twitch emote</div>
+                    </div>
+                </label>
+
+                <label class="radio-option">
+                    <input type="radio" name="trigger" value="command">
+                    <div>
+                        <div class="radio-label">Custom command</div>
+                        <div class="radio-desc">Only messages starting with a specific command</div>
+                    </div>
+                </label>
+
+            </div>
+            <div class="sub-input-wrapper" id="commandInputWrapper">
+                <input
+                    type="text"
+                    id="commandInput"
+                    placeholder="e.g. !shoot"
+                    autocomplete="off"
+                    spellcheck="false"
+                >
+            </div>
+            <p class="field-tip"><span class="tip-label">TIP</span> Put chat in sub-only mode if you want to limit who can play</p>
+        </div>
+
+        <!-- Background -->
+        <div class="field-group">
+            <label class="field-label">Background</label>
+            <div class="radio-group" id="bgGroup">
+
+                <label class="radio-option selected">
+                    <input type="radio" name="bg" value="gradient" checked>
+                    <div>
+                        <div class="radio-label">Gradient background</div>
+                        <div class="radio-desc">Choose a colour theme</div>
+                    </div>
+                </label>
+
+                <div class="sub-input-wrapper visible" id="gradientSwatchWrapper">
+                    <div class="gradient-swatches">
+                        <div class="gradient-swatch selected" data-variant="1" title="Purple"
+                             style="background: linear-gradient(135deg, #0a0a32, #473588)"></div>
+                        <div class="gradient-swatch" data-variant="2" title="Blue"
+                             style="background: linear-gradient(135deg, #0a0a32, #1c46af)"></div>
+                        <div class="gradient-swatch" data-variant="3" title="Teal"
+                             style="background: linear-gradient(135deg, #0a0a32, #146e73)"></div>
+                        <div class="gradient-swatch" data-variant="4" title="Red"
+                             style="background: linear-gradient(135deg, #0a0a32, #821c3c)"></div>
+                        <div class="gradient-swatch" data-variant="5" title="Green"
+                             style="background: linear-gradient(135deg, #0a0a32, #1a6b30)"></div>
+                        <div class="gradient-swatch" data-variant="6" title="Orange"
+                             style="background: linear-gradient(135deg, #0a0a32, #a04010)"></div>
+                        <div class="gradient-swatch" data-variant="7" title="Magenta"
+                             style="background: linear-gradient(135deg, #0a0a32, #8b1a6b)"></div>
+                    </div>
+                </div>
+
+                <label class="radio-option">
+                    <input type="radio" name="bg" value="transparent">
+                    <div>
+                        <div class="radio-label">Transparent</div>
+                        <div class="radio-desc">Best for OBS browser source overlay</div>
+                    </div>
+                </label>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- URL output -->
+    <div class="output-section">
+        <a class="btn btn-primary btn-start" id="startBtn" href="#" target="_blank">Start Game</a>
+        <p class="obs-hint">Or add as an OBS browser source to use as a stream overlay</p>
+        <div class="url-row">
+            <div class="url-box empty" id="urlDisplay">Enter a channel name to generate your URL</div>
+            <button class="btn btn-secondary" id="copyBtn" disabled>Copy Link</button>
+        </div>
+        <p class="footer-note">
+            Set OBS browser source to <code>1920&times;1080</code>
+        </p>
+    </div>
+
+    <script>
+        const channelInput      = document.getElementById('channelInput');
+        const commandInput      = document.getElementById('commandInput');
+        const commandWrapper    = document.getElementById('commandInputWrapper');
+        const gradientWrapper   = document.getElementById('gradientSwatchWrapper');
+        const urlDisplay        = document.getElementById('urlDisplay');
+        const copyBtn           = document.getElementById('copyBtn');
+        const startBtn          = document.getElementById('startBtn');
+
+        // Gradient variant definitions (must match game.html's GRADIENT_VARIANTS)
+        const GRADIENTS = {
+            '1': [
+                'radial-gradient(circle at top right, rgba(255,255,255,0), rgba(0,0,0,1))',
+                'linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(255,255,255,0) 30%)',
+                'linear-gradient(85deg, rgba(10,10,50,1) 14%, rgba(27,22,55,1) 35%, rgba(71,53,136,1) 100%)'
+            ].join(', '),
+            '2': [
+                'radial-gradient(circle at top right, rgba(255,255,255,0), rgba(0,0,0,1))',
+                'linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(255,255,255,0) 30%)',
+                'linear-gradient(85deg, rgba(10,10,50,1) 14%, rgba(18,22,60,1) 35%, rgba(28,70,175,1) 100%)'
+            ].join(', '),
+            '3': [
+                'radial-gradient(circle at top right, rgba(255,255,255,0), rgba(0,0,0,1))',
+                'linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(255,255,255,0) 30%)',
+                'linear-gradient(85deg, rgba(10,10,50,1) 14%, rgba(15,35,52,1) 35%, rgba(20,110,115,1) 100%)'
+            ].join(', '),
+            '4': [
+                'radial-gradient(circle at top right, rgba(255,255,255,0), rgba(0,0,0,1))',
+                'linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(255,255,255,0) 30%)',
+                'linear-gradient(85deg, rgba(10,10,50,1) 14%, rgba(40,15,28,1) 35%, rgba(130,28,60,1) 100%)'
+            ].join(', '),
+            '5': [
+                'radial-gradient(circle at top right, rgba(255,255,255,0), rgba(0,0,0,1))',
+                'linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(255,255,255,0) 30%)',
+                'linear-gradient(85deg, rgba(10,10,50,1) 14%, rgba(10,35,15,1) 35%, rgba(26,107,48,1) 100%)'
+            ].join(', '),
+            '6': [
+                'radial-gradient(circle at top right, rgba(255,255,255,0), rgba(0,0,0,1))',
+                'linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(255,255,255,0) 30%)',
+                'linear-gradient(85deg, rgba(10,10,50,1) 14%, rgba(40,20,5,1) 35%, rgba(160,64,16,1) 100%)'
+            ].join(', '),
+            '7': [
+                'radial-gradient(circle at top right, rgba(255,255,255,0), rgba(0,0,0,1))',
+                'linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(255,255,255,0) 30%)',
+                'linear-gradient(85deg, rgba(10,10,50,1) 14%, rgba(40,10,35,1) 35%, rgba(139,26,107,1) 100%)'
+            ].join(', '),
+        };
+
+        const TRANSPARENT_PREVIEW = 'repeating-conic-gradient(#0e0e0e 0% 25%, #181818 0% 50%) 0 0 / 30px 30px';
+
+        let gradientVariant = '1';
+
+        // Sync radio highlight class
+        function syncRadioHighlight(groupId) {
+            const group = document.getElementById(groupId);
+            group.querySelectorAll('.radio-option').forEach(opt => {
+                const radio = opt.querySelector('input[type="radio"]');
+                opt.classList.toggle('selected', radio.checked);
+            });
+        }
+
+        // Show/hide sub-inputs
+        function updateSubInputs() {
+            const trigger = document.querySelector('input[name="trigger"]:checked').value;
+            commandWrapper.classList.toggle('visible', trigger === 'command');
+
+            const bg = document.querySelector('input[name="bg"]:checked').value;
+            gradientWrapper.classList.toggle('visible', bg === 'gradient');
+        }
+
+        // Apply background preview to the setup page itself
+        function updatePreview() {
+            const bg = document.querySelector('input[name="bg"]:checked').value;
+            if (bg === 'gradient') {
+                document.body.style.background = GRADIENTS[gradientVariant];
+            } else {
+                document.body.style.background = TRANSPARENT_PREVIEW;
+            }
+        }
+
+        // Generate the game URL
+        function buildURL() {
+            const channel = channelInput.value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+            if (!channel) return null;
+
+            const trigger = document.querySelector('input[name="trigger"]:checked').value;
+            const bg      = document.querySelector('input[name="bg"]:checked').value;
+
+            const params = new URLSearchParams();
+            params.set('channel', channel);
+
+            if (trigger === 'emote') {
+                params.set('trigger', 'emote');
+            } else if (trigger === 'command') {
+                const cmd = commandInput.value.trim() || '!shoot';
+                params.set('trigger', cmd);
+            }
+
+            if (bg === 'gradient') {
+                params.set('bg', gradientVariant);
+            }
+
+            const base = window.location.origin + window.location.pathname.replace('index.html', '');
+            return `${base}game.html?${params.toString()}`;
+        }
+
+        function updateOutput() {
+            const url = buildURL();
+            if (url) {
+                urlDisplay.textContent = url;
+                urlDisplay.classList.remove('empty');
+                copyBtn.disabled = false;
+                startBtn.href = url;
+                startBtn.classList.add('active');
+            } else {
+                urlDisplay.textContent = 'Enter a channel name to generate your URL';
+                urlDisplay.classList.add('empty');
+                copyBtn.disabled = true;
+                startBtn.href = '#';
+                startBtn.classList.remove('active');
+            }
+            updatePreview();
+        }
+
+        // Event listeners
+        channelInput.addEventListener('input', () => {
+            const cleaned = channelInput.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+            if (channelInput.value !== cleaned) channelInput.value = cleaned;
+            updateOutput();
+        });
+
+        commandInput.addEventListener('input', updateOutput);
+
+        document.querySelectorAll('input[name="trigger"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                syncRadioHighlight('triggerGroup');
+                updateSubInputs();
+                updateOutput();
+            });
+        });
+
+        document.querySelectorAll('input[name="bg"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                syncRadioHighlight('bgGroup');
+                updateSubInputs();
+                updateOutput();
+            });
+        });
+
+        // Gradient swatches
+        gradientWrapper.querySelectorAll('.gradient-swatch').forEach(swatch => {
+            swatch.addEventListener('click', () => {
+                gradientWrapper.querySelectorAll('.gradient-swatch').forEach(s => s.classList.remove('selected'));
+                swatch.classList.add('selected');
+                gradientVariant = swatch.dataset.variant;
+                updateOutput();
+            });
+        });
+
+        // Copy button
+        copyBtn.addEventListener('click', () => {
+            const url = buildURL();
+            if (!url) return;
+            navigator.clipboard.writeText(url).then(() => {
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => { copyBtn.textContent = 'Copy Link'; }, 2000);
+            }).catch(() => {
+                const range = document.createRange();
+                range.selectNode(urlDisplay);
+                window.getSelection().removeAllRanges();
+                window.getSelection().addRange(range);
+            });
+        });
+
+        // Init
+        updateSubInputs();
+        updateOutput();
+    </script>
+</body>
+</html>

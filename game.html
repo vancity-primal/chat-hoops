@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Hoops</title>
+    <style>
+        @font-face {
+            font-family: 'Dharma Gothic';
+            src: url('fonts/dharma-gothic-m-ex-bold.ttf') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Ropa Sans Pro';
+            src: url('fonts/ropa-sans-pro-regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            display: block;
+            background: transparent;
+            position: relative;
+            z-index: 1;
+        }
+
+        #background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0), rgba(0, 0, 0, 1)),
+            linear-gradient(0deg,rgba(0, 0, 0, 1) 0%, rgba(255, 255, 255, 0) 30%),
+            linear-gradient(85deg,rgba(10, 10, 50, 1) 14%, rgba(27, 22, 55, 1) 35%, rgba(71, 53, 136, 1) 100%);
+            z-index: 0;
+            display: none;
+        }
+
+        #winnersContainer {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 74px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            z-index: 3;
+            font-family: 'Ropa Sans Pro', sans-serif;
+        }
+
+        .section-label {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            white-space: nowrap;
+        }
+
+        #leaderboardCards {
+            display: flex;
+            gap: 15px;
+        }
+
+        #recentGoalsContainer {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            overflow: hidden;
+            flex: 1;
+            min-width: 0;
+            -webkit-mask-image: linear-gradient(to right, black calc(100% - 50px), transparent 100%);
+            mask-image: linear-gradient(to right, black calc(100% - 50px), transparent 100%);
+        }
+
+        #recentGoalsList {
+            display: flex;
+            gap: 10px;
+            flex-direction: row;
+            overflow-x: hidden;
+        }
+
+        .ball-container {
+            position: fixed;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .ball-img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            animation: spin linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .trail-element {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1;
+            border-radius: 50%;
+            animation: fadeOut 0.5s linear forwards;
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 0.5; }
+            to { opacity: 0; }
+        }
+
+        .ball-username {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 4px;
+            padding: 4px 8px;
+            background: rgba(25, 42, 86, 0.5);
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+            font-family: Arial, sans-serif;
+            white-space: nowrap;
+            font-weight: normal;
+        }
+
+        .ball-debug {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-top: 4px;
+            font-size: 12px;
+            font-family: monospace;
+            color: rgba(255, 255, 255, 0.8);
+            white-space: nowrap;
+        }
+
+        .ball-hitbox {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 1px dashed rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .leaderboard-card {
+            background: rgba(0, 0, 0, 0.85);
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 3px solid;
+            color: white;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .leaderboard-card.gold {
+            border-color: #FFD700;
+            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .leaderboard-card.silver {
+            border-color: #C0C0C0;
+            box-shadow: 0 4px 20px rgba(192, 192, 192, 0.4);
+        }
+
+        .leaderboard-card.bronze {
+            border-color: #CD7F32;
+            box-shadow: 0 4px 20px rgba(205, 127, 50, 0.4);
+        }
+
+        .leaderboard-emoji {
+            font-size: 28px;
+            line-height: 1;
+        }
+
+        .leaderboard-username {
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            white-space: nowrap;
+        }
+
+        .leaderboard-score {
+            font-size: 20px;
+            font-weight: bold;
+            font-family: 'Dharma Gothic', sans-serif;
+            color: #f5ac3e;
+            white-space: nowrap;
+        }
+
+        .placeholder-message {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .recent-goal-box {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: 2px solid;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            white-space: nowrap;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Settings button + panel */
+        #settingsBtn {
+            position: fixed;
+            top: 26px;
+            right: 20px;
+            z-index: 10;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.65);
+            color: white;
+            font-size: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, border-color 0.2s;
+        }
+
+        #settingsBtn:hover {
+            background: rgba(245, 172, 62, 0.25);
+            border-color: rgba(245, 172, 62, 0.5);
+        }
+
+        #settingsPanel {
+            position: fixed;
+            top: 78px;
+            right: 20px;
+            z-index: 10;
+            background: rgba(10, 10, 30, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 18px 20px;
+            font-family: 'Ropa Sans Pro', sans-serif;
+            min-width: 210px;
+            display: none;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+        }
+
+        #settingsPanel.open {
+            display: block;
+        }
+
+        .settings-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #f5ac3e;
+            margin-bottom: 14px;
+        }
+
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            color: white;
+            font-size: 16px;
+        }
+
+        .settings-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        /* Toggle switch */
+        .toggle {
+            position: relative;
+            width: 38px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+        }
+
+        .toggle-track {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.18);
+            border-radius: 11px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .toggle-track::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+            transition: left 0.2s;
+        }
+
+        .toggle input:checked + .toggle-track {
+            background: #f5ac3e;
+        }
+
+        .toggle input:checked + .toggle-track::after {
+            left: 19px;
+        }
+
+        /* End round button — bottom centre */
+        #endRoundBtn {
+            position: fixed;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 36px;
+            background: rgba(220, 60, 60, 0.18);
+            border: 1px solid rgba(220, 60, 60, 0.4);
+            border-radius: 10px;
+            color: rgba(255, 110, 110, 0.95);
+            font-family: 'Ropa Sans Pro', sans-serif;
+            font-size: 18px;
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease, background 0.15s, color 0.15s;
+            z-index: 5;
+            white-space: nowrap;
+        }
+
+        #endRoundBtn.visible {
+            opacity: 0.25;
+            pointer-events: auto;
+        }
+
+        #endRoundBtn:hover {
+            opacity: 1;
+            background: rgba(220, 60, 60, 0.35);
+            color: white;
+        }
+
+        #endRoundBtn:disabled {
+            opacity: 0.1;
+            pointer-events: none;
+        }
+
+        /* Countdown overlay */
+        #countdownOverlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        #countdownNumber {
+            font-family: 'Dharma Gothic', sans-serif;
+            font-size: 320px;
+            color: white;
+            line-height: 1;
+            text-shadow: 0 0 80px rgba(245, 172, 62, 0.5);
+            animation: countPulse 0.9s ease-out forwards;
+        }
+
+        @keyframes countPulse {
+            0%   { transform: scale(1.5); opacity: 0; }
+            25%  { opacity: 1; }
+            100% { transform: scale(1);   opacity: 1; }
+        }
+
+        /* Podium overlay */
+        #podiumOverlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(5, 5, 20, 0.93);
+            z-index: 20;
+        }
+
+        .podium-title {
+            font-family: 'Dharma Gothic', sans-serif;
+            font-size: 96px;
+            color: #f5ac3e;
+            line-height: 1;
+            letter-spacing: 4px;
+            margin-bottom: 48px;
+        }
+
+        #podiumStage {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+        }
+
+        .podium-spot {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 200px;
+        }
+
+        .podium-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .podium-rank-emoji {
+            font-size: 38px;
+            line-height: 1;
+        }
+
+        .podium-player-name {
+            font-family: 'Ropa Sans Pro', sans-serif;
+            font-size: 20px;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 14px;
+            border-radius: 6px;
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            white-space: nowrap;
+            max-width: 190px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .podium-player-score {
+            font-family: 'Dharma Gothic', sans-serif;
+            font-size: 26px;
+            color: #f5ac3e;
+            min-height: 32px;
+        }
+
+        .podium-block {
+            width: 200px;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Dharma Gothic', sans-serif;
+            font-size: 64px;
+            color: rgba(255, 255, 255, 0.2);
+            border-top: 3px solid;
+        }
+
+        .podium-block.first  { height: 180px; background: rgba(255, 215, 0, 0.1);   border-color: rgba(255, 215, 0, 0.45); }
+        .podium-block.second { height: 130px; background: rgba(192, 192, 192, 0.1); border-color: rgba(192, 192, 192, 0.45); }
+        .podium-block.third  { height: 90px;  background: rgba(205, 127, 50, 0.1);  border-color: rgba(205, 127, 50, 0.45); }
+
+        .podium-spot.empty { opacity: 0.25; }
+
+        #newRoundBtn {
+            margin-top: 52px;
+            padding: 14px 48px;
+            background: #f5ac3e;
+            color: #0a0a1a;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Ropa Sans Pro', sans-serif;
+            font-size: 22px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.15s;
+            letter-spacing: 0.5px;
+        }
+
+        #newRoundBtn:hover { background: #ffc25a; }
+
+        /* Error card shown when no channel is configured */
+        #error-card {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0a0a1a;
+            font-family: Arial, sans-serif;
+        }
+
+        #error-card .card {
+            background: rgba(0, 0, 0, 0.85);
+            border: 2px solid #f5ac3e;
+            border-radius: 12px;
+            padding: 40px 50px;
+            text-align: center;
+            max-width: 480px;
+        }
+
+        #error-card h2 {
+            color: #f5ac3e;
+            margin: 0 0 16px;
+            font-size: 28px;
+        }
+
+        #error-card p {
+            color: rgba(255, 255, 255, 0.8);
+            margin: 0 0 24px;
+            line-height: 1.5;
+        }
+
+        #error-card a {
+            display: inline-block;
+            background: #f5ac3e;
+            color: #0a0a1a;
+            text-decoration: none;
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        #error-card a:hover {
+            background: #ffc25a;
+        }
+
+        /* Click-to-resume overlay (shown on refresh) */
+        #resumeOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.55);
+            cursor: pointer;
+        }
+
+        #resumeOverlay.active {
+            display: flex;
+        }
+
+        #resumeOverlay span {
+            font-family: 'Dharma Gothic', sans-serif;
+            font-size: 52px;
+            color: white;
+            letter-spacing: 3px;
+            opacity: 0.75;
+            text-transform: uppercase;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="resumeOverlay"><span>Click to start</span></div>
+    <div id="background"></div>
+    <div id="winnersContainer">
+        <div class="section-label">Leaderboard</div>
+        <div id="leaderboardCards"></div>
+        <div id="recentGoalsContainer">
+            <div class="section-label">Recent goals</div>
+            <div id="recentGoalsList"></div>
+        </div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+
+    <button id="settingsBtn" title="Sound settings">⚙</button>
+    <div id="settingsPanel">
+        <div class="settings-title">Sound</div>
+        <div class="settings-row">
+            <span>Throw</span>
+            <label class="toggle">
+                <input type="checkbox" id="snd-throw" checked>
+                <span class="toggle-track"></span>
+            </label>
+        </div>
+        <div class="settings-row">
+            <span>Near miss</span>
+            <label class="toggle">
+                <input type="checkbox" id="snd-nearmiss" checked>
+                <span class="toggle-track"></span>
+            </label>
+        </div>
+        <div class="settings-row">
+            <span>Rim bounce</span>
+            <label class="toggle">
+                <input type="checkbox" id="snd-rimbounce" checked>
+                <span class="toggle-track"></span>
+            </label>
+        </div>
+        <div class="settings-row">
+            <span>Score</span>
+            <label class="toggle">
+                <input type="checkbox" id="snd-score" checked>
+                <span class="toggle-track"></span>
+            </label>
+        </div>
+    </div>
+
+    <button id="endRoundBtn">End Round</button>
+
+    <div id="countdownOverlay">
+        <div id="countdownNumber"></div>
+    </div>
+
+    <div id="podiumOverlay">
+        <div class="podium-title">Round Over</div>
+        <div id="podiumStage">
+            <!-- 2nd (left) -->
+            <div class="podium-spot" id="podium-2nd">
+                <div class="podium-info">
+                    <div class="podium-rank-emoji">🥈</div>
+                    <div class="podium-player-name">---</div>
+                    <div class="podium-player-score"></div>
+                </div>
+                <div class="podium-block second">2</div>
+            </div>
+            <!-- 1st (centre, tallest) -->
+            <div class="podium-spot" id="podium-1st">
+                <div class="podium-info">
+                    <div class="podium-rank-emoji">🥇</div>
+                    <div class="podium-player-name">---</div>
+                    <div class="podium-player-score"></div>
+                </div>
+                <div class="podium-block first">1</div>
+            </div>
+            <!-- 3rd (right) -->
+            <div class="podium-spot" id="podium-3rd">
+                <div class="podium-info">
+                    <div class="podium-rank-emoji">🥉</div>
+                    <div class="podium-player-name">---</div>
+                    <div class="podium-player-score"></div>
+                </div>
+                <div class="podium-block third">3</div>
+            </div>
+        </div>
+        <button id="newRoundBtn">Start New Round</button>
+    </div>
+
+    <script src="scripts/tmi.bundle.js"></script>
+    <script>
+        console.log('Script loading...');
+
+        // --- URL param config ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const CONFIG = {
+            channel: urlParams.get('channel') || null,
+            trigger: urlParams.get('trigger') || 'all',  // 'all' | 'emote' | '!command'
+            bg:      urlParams.get('bg')      || '0',    // '0'=transparent | '1'=gradient
+            bgcolor: urlParams.get('bgcolor') || null,   // hex without '#', e.g. '1b1637'
+        };
+
+        // --- Missing channel: show error and halt ---
+        if (!CONFIG.channel) {
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.innerHTML = `
+                    <div id="error-card">
+                        <div class="card">
+                            <h2>No channel configured</h2>
+                            <p>Open the setup page to generate a URL for your channel, then add it as an OBS browser source.</p>
+                            <a href="index.html">Go to setup page</a>
+                        </div>
+                    </div>`;
+            });
+            throw new Error('No channel configured — open index.html to set up the game.');
+        }
+
+        // --- Background application ---
+        const GRADIENT_VARIANTS = {
+            '1': 'linear-gradient(85deg, rgba(10,10,50,1) 14%, rgba(27,22,55,1) 35%, rgba(71,53,136,1) 100%)',
+            '2': 'linear-gradient(85deg, rgba(10,10,50,1) 14%, rgba(18,22,60,1) 35%, rgba(28,70,175,1) 100%)',
+            '3': 'linear-gradient(85deg, rgba(10,10,50,1) 14%, rgba(15,35,52,1) 35%, rgba(20,110,115,1) 100%)',
+            '4': 'linear-gradient(85deg, rgba(10,10,50,1) 14%, rgba(40,15,28,1) 35%, rgba(130,28,60,1) 100%)',
+            '5': 'linear-gradient(85deg, rgba(10,10,50,1) 14%, rgba(10,35,15,1) 35%, rgba(26,107,48,1) 100%)',
+            '6': 'linear-gradient(85deg, rgba(10,10,50,1) 14%, rgba(40,20,5,1) 35%, rgba(160,64,16,1) 100%)',
+            '7': 'linear-gradient(85deg, rgba(10,10,50,1) 14%, rgba(40,10,35,1) 35%, rgba(139,26,107,1) 100%)',
+        };
+
+        function applyBackground() {
+            const bg = document.getElementById('background');
+            if (CONFIG.bgcolor) {
+                bg.style.background = '#' + CONFIG.bgcolor;
+                bg.style.display = 'block';
+            } else if (GRADIENT_VARIANTS[CONFIG.bg]) {
+                const overlays = [
+                    'radial-gradient(circle at top right, rgba(255,255,255,0), rgba(0,0,0,1))',
+                    'linear-gradient(0deg, rgba(0,0,0,1) 0%, rgba(255,255,255,0) 30%)',
+                    GRADIENT_VARIANTS[CONFIG.bg]
+                ].join(', ');
+                bg.style.background = overlays;
+                bg.style.display = 'block';
+            } else {
+                bg.style.display = 'none';
+            }
+        }
+
+        class SimpleBasketGame {
+            constructor() {
+                console.log('Game initializing...');
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.leaderboardContainer = document.getElementById('leaderboardCards');
+                this.recentGoalsListDiv = document.getElementById('recentGoalsList');
+
+                this.resizeCanvas();
+                window.addEventListener('resize', () => this.resizeCanvas());
+
+                this.balls = [];
+                this.basket = {
+                    x: window.innerWidth / 2 - 50,
+                    y: window.innerHeight - 100,
+                    width: 100,
+                    height: 15,
+                    moveDirection: 1,
+                    speed: 1
+                };
+
+                this.gravity = 0.3;
+                this.score = 0;
+                this.attempts = 0;
+                this.paused = false;
+                this.debugMode = false;
+                this.roundEnded = false;
+                this.countdownActive = false;
+                this.ready = true;
+
+                // Leaderboard tracking with timestamps for tie-breaking
+                this.userScores = new Map(); // username -> { score, firstScoreTime, userColor, displayName }
+                this.previousTop3 = []; // Cache previous top 3 to avoid unnecessary re-renders
+
+                // Visual scale for coins (makes them bigger without affecting physics hitbox)
+                this.coinVisualScale = 4.0;
+                this.coinGifPath = 'img/coin.gif';
+
+                this.setupSounds();
+                this.setupTwitchChat();
+                this.initializePlaceholders();
+                this.gameLoop();
+                console.log('Game initialized successfully');
+            }
+
+            initializePlaceholders() {
+                // Initialize leaderboard placeholder
+                const leaderboardPlaceholder = document.createElement('div');
+                leaderboardPlaceholder.className = 'placeholder-message';
+                leaderboardPlaceholder.textContent = 'No scores yet';
+                this.leaderboardContainer.appendChild(leaderboardPlaceholder);
+
+                // Initialize recent goals placeholder
+                const recentGoalsPlaceholder = document.createElement('div');
+                recentGoalsPlaceholder.className = 'placeholder-message';
+                recentGoalsPlaceholder.textContent = 'No goals yet';
+                this.recentGoalsListDiv.appendChild(recentGoalsPlaceholder);
+            }
+
+            resizeCanvas() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+
+            setupSounds() {
+                console.log('Setting up sound system...');
+
+                this.sounds = {};
+                this.masterVolume = 0.7;
+                this.muted = false;
+
+                // Per-category enabled state — loaded from localStorage if available
+                const saved = JSON.parse(localStorage.getItem('chat-hoops-sound-categories') || '{}');
+                this.soundCategories = {
+                    throw:     saved.throw     !== undefined ? saved.throw     : true,
+                    nearmiss:  saved.nearmiss  !== undefined ? saved.nearmiss  : true,
+                    rimbounce: saved.rimbounce !== undefined ? saved.rimbounce : true,
+                    score:     saved.score     !== undefined ? saved.score     : true,
+                };
+
+                const soundConfig = {
+                    tick:       { file: 'sounds/tick.mp3',          volume: 0.3, category: 'throw'     },
+                    whip1:      { file: 'sounds/whip-1.mp3',        volume: 0.5, category: 'nearmiss'  },
+                    whip2:      { file: 'sounds/whip-2.mp3',        volume: 0.5, category: 'nearmiss'  },
+                    whip3:      { file: 'sounds/whip-3.mp3',        volume: 0.5, category: 'nearmiss'  },
+                    whip4:      { file: 'sounds/whip-4.mp3',        volume: 0.5, category: 'nearmiss'  },
+                    whip5:      { file: 'sounds/whip-5.mp3',        volume: 0.5, category: 'nearmiss'  },
+                    whip6:      { file: 'sounds/whip-6.mp3',        volume: 0.5, category: 'nearmiss'  },
+                    score:      { file: 'sounds/victory-coins.mp3', volume: 0.5, category: 'score'     },
+                    rimBounce1: { file: 'sounds/twang.mp3',         volume: 0.4, category: 'rimbounce' },
+                    rimBounce2: { file: 'sounds/twang-2.mp3',       volume: 0.4, category: 'rimbounce' },
+                    rimBounce3: { file: 'sounds/twang-3.mp3',       volume: 0.4, category: 'rimbounce' },
+                    rimBounce4: { file: 'sounds/twang-4.mp3',       volume: 0.4, category: 'rimbounce' },
+                };
+
+                this.whipSounds = ['whip1', 'whip2', 'whip3', 'whip4', 'whip5', 'whip6'];
+                this.rimSounds = ['rimBounce1', 'rimBounce2', 'rimBounce3', 'rimBounce4'];
+                this.lastRimSound = null;
+
+                Object.keys(soundConfig).forEach(key => {
+                    const config = soundConfig[key];
+                    const audio = new Audio();
+                    audio.preload = 'auto';
+                    audio.volume = config.volume * this.masterVolume;
+
+                    audio.addEventListener('canplaythrough', () => {
+                        console.log(`Sound loaded: ${key}`);
+                    });
+
+                    audio.addEventListener('error', () => {
+                        console.log(`Sound not found: ${key} (${config.file}) - continuing without sound`);
+                    });
+
+                    audio.src = config.file;
+                    this.sounds[key] = {
+                        audio: audio,
+                        baseVolume: config.volume,
+                        category: config.category
+                    };
+                });
+
+                console.log('Sound system initialized');
+            }
+
+            playSound(soundName) {
+                if (this.muted || !this.sounds[soundName]) return;
+                const soundData = this.sounds[soundName];
+                if (!this.soundCategories[soundData.category]) return;
+
+                try {
+                    const audio = soundData.audio;
+                    audio.currentTime = 0;
+                    audio.volume = soundData.baseVolume * this.masterVolume;
+                    audio.play().catch(() => {});
+                } catch (e) {
+                    // Silently ignore sound errors
+                }
+            }
+
+            setVolume(volume) {
+                this.masterVolume = Math.max(0, Math.min(1, volume));
+                Object.values(this.sounds).forEach(soundData => {
+                    soundData.audio.volume = soundData.baseVolume * this.masterVolume;
+                });
+            }
+
+            toggleMute() {
+                this.muted = !this.muted;
+                return this.muted;
+            }
+
+            recordScore(username, displayName, userColor) {
+                const currentTime = Date.now();
+
+                if (this.userScores.has(username)) {
+                    const userData = this.userScores.get(username);
+                    userData.score++;
+                } else {
+                    this.userScores.set(username, {
+                        score: 1,
+                        firstScoreTime: currentTime,
+                        userColor: userColor,
+                        displayName: displayName
+                    });
+                }
+
+                this.addRecentGoal(displayName, userColor);
+                this.updateLeaderboard();
+            }
+
+            addRecentGoal(displayName, userColor) {
+                const placeholder = this.recentGoalsListDiv.querySelector('.placeholder-message');
+                if (placeholder) {
+                    placeholder.remove();
+                }
+
+                const goalBox = document.createElement('div');
+                goalBox.className = 'recent-goal-box';
+                goalBox.textContent = displayName;
+
+                const color = userColor || '#ffffff';
+                if (color.startsWith('#')) {
+                    const hex = color.slice(1);
+                    const r = parseInt(hex.substr(0, 2), 16);
+                    const g = parseInt(hex.substr(2, 2), 16);
+                    const b = parseInt(hex.substr(4, 2), 16);
+                    goalBox.style.borderColor = `rgba(${r}, ${g}, ${b}, 0.7)`;
+                } else {
+                    goalBox.style.borderColor = color;
+                }
+
+                this.recentGoalsListDiv.insertBefore(goalBox, this.recentGoalsListDiv.firstChild);
+            }
+
+            getTop3Players() {
+                const sortedPlayers = Array.from(this.userScores.entries())
+                    .map(([username, data]) => ({ username, ...data }))
+                    .sort((a, b) => {
+                        if (b.score !== a.score) return b.score - a.score;
+                        return a.firstScoreTime - b.firstScoreTime;
+                    });
+
+                return sortedPlayers.slice(0, 3);
+            }
+
+            updateLeaderboard() {
+                const top3 = this.getTop3Players();
+
+                const hasChanged = this.hasLeaderboardChanged(top3);
+
+                if (!hasChanged) {
+                    const scoreElements = this.leaderboardContainer.querySelectorAll('.leaderboard-score');
+                    top3.forEach((player, index) => {
+                        if (scoreElements[index]) {
+                            scoreElements[index].textContent = `${player.score} ${player.score === 1 ? 'point' : 'points'}`;
+                        }
+                    });
+                    return;
+                }
+
+                this.previousTop3 = top3.map(p => ({ username: p.username, score: p.score }));
+                this.leaderboardContainer.innerHTML = '';
+
+                if (top3.length === 0) {
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'placeholder-message';
+                    placeholder.textContent = 'No scores yet';
+                    this.leaderboardContainer.appendChild(placeholder);
+                    return;
+                }
+
+                const medals = [
+                    { emoji: '🥇', class: 'gold' },
+                    { emoji: '🥈', class: 'silver' },
+                    { emoji: '🥉', class: 'bronze' }
+                ];
+
+                top3.forEach((player, index) => {
+                    const card = document.createElement('div');
+                    card.className = `leaderboard-card ${medals[index].class}`;
+
+                    const emoji = document.createElement('div');
+                    emoji.className = 'leaderboard-emoji';
+                    emoji.textContent = medals[index].emoji;
+
+                    const username = document.createElement('div');
+                    username.className = 'leaderboard-username';
+                    username.textContent = player.displayName;
+
+                    const score = document.createElement('div');
+                    score.className = 'leaderboard-score';
+                    score.textContent = `${player.score} ${player.score === 1 ? 'point' : 'points'}`;
+
+                    card.appendChild(emoji);
+                    card.appendChild(username);
+                    card.appendChild(score);
+
+                    this.leaderboardContainer.appendChild(card);
+                });
+
+                document.getElementById('endRoundBtn').classList.toggle('visible', top3.length === 3);
+            }
+
+            hasLeaderboardChanged(currentTop3) {
+                if (currentTop3.length !== this.previousTop3.length) return true;
+                for (let i = 0; i < currentTop3.length; i++) {
+                    if (currentTop3[i].username !== this.previousTop3[i].username) return true;
+                }
+                return false;
+            }
+
+            setupTwitchChat() {
+                console.log(`Setting up Twitch chat connection to: ${CONFIG.channel}`);
+
+                if (typeof tmi === 'undefined') {
+                    console.error('tmi.js failed to load. Check internet connection.');
+                    return;
+                }
+
+                this.client = new tmi.Client({
+                    channels: [CONFIG.channel]
+                });
+
+                this.client.connect().then(() => {
+                    console.log(`Connected to Twitch chat: ${CONFIG.channel}`);
+                }).catch(err => {
+                    console.error('Failed to connect to Twitch:', err);
+                });
+
+                this.client.on('message', (channel, tags, message, self) => {
+                    if (self) return;
+                    if (!this.ready) return;
+                    if (this.roundEnded) return;
+
+                    // Trigger filtering
+                    if (CONFIG.trigger === 'emote') {
+                        if (!tags.emotes || Object.keys(tags.emotes).length === 0) return;
+                    } else if (CONFIG.trigger !== 'all') {
+                        // Custom command: startsWith match, case-insensitive
+                        if (!message.toLowerCase().trim().startsWith(CONFIG.trigger.toLowerCase())) return;
+                    }
+
+                    const username = tags.username || tags['display-name'] || 'Anonymous';
+                    console.log(`${username} triggered a throw: "${message}"`);
+                    this.playSound('tick');
+                    this.throwBall(username, tags);
+                });
+
+                this.client.on('connected', (addr, port) => {
+                    console.log(`Connected to Twitch IRC at ${addr}:${port}`);
+                });
+
+                this.client.on('disconnected', (reason) => {
+                    console.log(`Disconnected from Twitch: ${reason}`);
+                });
+            }
+
+            startEndRoundCountdown() {
+                if (this.countdownActive || this.roundEnded) return;
+                this.countdownActive = true;
+
+                document.getElementById('settingsPanel').classList.remove('open');
+
+                const overlay  = document.getElementById('countdownOverlay');
+                const numberEl = document.getElementById('countdownNumber');
+                overlay.style.display = 'flex';
+
+                let count = 10;
+                const setNumber = (n) => {
+                    numberEl.textContent = n;
+                    // Re-trigger the pulse animation each tick
+                    numberEl.style.animation = 'none';
+                    numberEl.offsetHeight; // force reflow
+                    numberEl.style.animation = 'countPulse 0.9s ease-out forwards';
+                };
+
+                setNumber(count);
+
+                const tick = setInterval(() => {
+                    count--;
+                    if (count <= 0) {
+                        clearInterval(tick);
+                        overlay.style.display = 'none';
+                        this.countdownActive = false;
+                        this.roundEnded = true;
+                        this.showPodium();
+                    } else {
+                        setNumber(count);
+                    }
+                }, 1000);
+            }
+
+            showPodium() {
+                // Clear any balls still in flight
+                this.balls.forEach(b => b.element.remove());
+                this.balls = [];
+
+                const top3 = this.getTop3Players();
+
+                // Podium order: 2nd (left), 1st (centre), 3rd (right)
+                const slots = [
+                    { id: 'podium-2nd', player: top3[1] },
+                    { id: 'podium-1st', player: top3[0] },
+                    { id: 'podium-3rd', player: top3[2] },
+                ];
+
+                slots.forEach(({ id, player }) => {
+                    const spot    = document.getElementById(id);
+                    const nameEl  = spot.querySelector('.podium-player-name');
+                    const scoreEl = spot.querySelector('.podium-player-score');
+
+                    if (player) {
+                        nameEl.textContent        = player.displayName;
+                        nameEl.style.borderColor  = player.userColor || 'rgba(255,255,255,0.25)';
+                        scoreEl.textContent       = `${player.score} ${player.score === 1 ? 'point' : 'points'}`;
+                        spot.classList.remove('empty');
+                    } else {
+                        nameEl.textContent        = '---';
+                        nameEl.style.borderColor  = 'rgba(255,255,255,0.15)';
+                        scoreEl.textContent       = '';
+                        spot.classList.add('empty');
+                    }
+                });
+
+                document.getElementById('podiumOverlay').style.display = 'flex';
+            }
+
+            startNewRound() {
+                // Clear balls
+                this.balls.forEach(b => b.element.remove());
+                this.balls = [];
+
+                // Reset scores
+                this.userScores.clear();
+                this.previousTop3 = [];
+                this.score    = 0;
+                this.attempts = 0;
+
+                // Reset leaderboard display
+                this.leaderboardContainer.innerHTML = '';
+                const lbPlaceholder = document.createElement('div');
+                lbPlaceholder.className   = 'placeholder-message';
+                lbPlaceholder.textContent = 'No scores yet';
+                this.leaderboardContainer.appendChild(lbPlaceholder);
+
+                // Reset recent goals display
+                this.recentGoalsListDiv.innerHTML = '';
+                const rgPlaceholder = document.createElement('div');
+                rgPlaceholder.className   = 'placeholder-message';
+                rgPlaceholder.textContent = 'No goals yet';
+                this.recentGoalsListDiv.appendChild(rgPlaceholder);
+
+                // Reset state
+                this.roundEnded     = false;
+                this.countdownActive = false;
+
+                document.getElementById('podiumOverlay').style.display = 'none';
+                const endBtn = document.getElementById('endRoundBtn');
+                endBtn.disabled = false;
+                endBtn.classList.remove('visible');
+            }
+
+            throwBall(username, tags = {}) {
+                this.attempts++;
+                console.log(`${username} threw a ball! Attempt #${this.attempts} (Active balls: ${this.balls.length})`);
+
+                const basketCenterX = this.basket.x + this.basket.width / 2;
+                const minDistance = 200;
+                let startX;
+
+                if (Math.random() < 0.5) {
+                    const leftRange = basketCenterX - minDistance - 100;
+                    if (leftRange > 0) {
+                        startX = Math.random() * leftRange + 100;
+                    } else {
+                        startX = 50;
+                    }
+                } else {
+                    const rightStart = basketCenterX + minDistance;
+                    const rightRange = window.innerWidth - rightStart - 100;
+                    if (rightRange > 0) {
+                        startX = rightStart + Math.random() * rightRange;
+                    } else {
+                        startX = window.innerWidth - 50;
+                    }
+                }
+
+                if (isNaN(startX) || startX < 50 || startX > window.innerWidth - 50) {
+                    startX = window.innerWidth / 2 + (Math.random() - 0.5) * 200;
+                }
+
+                const isAccurateShot = Math.random() < 0.01;
+
+                let vx, vy;
+                if (isAccurateShot) {
+                    vx = (Math.random() - 0.5) * 8;
+                    vy = -12 - Math.random() * 4;
+                } else {
+                    vx = (Math.random() - 0.5) * 25;
+                    vy = -8 - Math.random() * 12;
+                }
+
+                const minHorizontalVelocity = 0.5;
+                if (Math.abs(vx) < minHorizontalVelocity) {
+                    vx = vx >= 0 ? minHorizontalVelocity : -minHorizontalVelocity;
+                }
+
+                const userColor = tags.color || this.getRandomColor();
+                const displayName = tags['display-name'] || username;
+                const ballColor = this.getVariedColor(userColor);
+
+                if (isNaN(vx) || isNaN(vy) || !ballColor || ballColor === '#000000') {
+                    console.error(`Invalid ball data for ${username}`);
+                    return;
+                }
+
+                const visualSize = 12 * this.coinVisualScale * 2;
+                const container = document.createElement('div');
+                container.className = 'ball-container';
+                container.style.width = visualSize + 'px';
+                container.style.height = visualSize + 'px';
+                container.style.left = (startX - visualSize / 2) + 'px';
+                container.style.top = (window.innerHeight - 50 - visualSize / 2) + 'px';
+
+                const spinSpeed = 0.5 + Math.random() * 1.0;
+                const img = document.createElement('img');
+                img.className = 'ball-img';
+                img.src = this.coinGifPath;
+                img.style.animationDuration = spinSpeed + 's';
+                container.appendChild(img);
+
+                const label = document.createElement('div');
+                label.className = 'ball-username';
+                label.textContent = displayName;
+                label.style.border = `1px solid ${userColor}`;
+                container.appendChild(label);
+
+                const debugInfo = document.createElement('div');
+                debugInfo.className = 'ball-debug';
+                debugInfo.style.display = this.debugMode ? 'block' : 'none';
+                container.appendChild(debugInfo);
+
+                const hitbox = document.createElement('div');
+                hitbox.className = 'ball-hitbox';
+                hitbox.style.width = (12 * 2) + 'px';
+                hitbox.style.height = (12 * 2) + 'px';
+                hitbox.style.display = this.debugMode ? 'block' : 'none';
+                container.appendChild(hitbox);
+
+                document.body.appendChild(container);
+
+                const ball = {
+                    x: startX,
+                    y: window.innerHeight - 50,
+                    vx: vx,
+                    vy: vy,
+                    radius: 12,
+                    color: ballColor,
+                    scored: false,
+                    username: username,
+                    displayName: displayName,
+                    userColor: userColor,
+                    lastRimBounce: 0,
+                    lastNearMiss: 0,
+                    element: container,
+                    debugElement: debugInfo,
+                    hitboxElement: hitbox,
+                    visualSize: visualSize,
+                    trailCounter: 0
+                };
+
+                this.balls.push(ball);
+                this.updateScore();
+            }
+
+            createTrailElement(ball) {
+                const trailSize = ball.radius * 0.75;
+                const trail = document.createElement('div');
+                trail.className = 'trail-element';
+                trail.style.width = (trailSize * 2) + 'px';
+                trail.style.height = (trailSize * 2) + 'px';
+                trail.style.left = (ball.x - trailSize) + 'px';
+                trail.style.top = (ball.y - trailSize) + 'px';
+                trail.style.backgroundColor = ball.color;
+
+                document.body.appendChild(trail);
+
+                setTimeout(() => {
+                    trail.remove();
+                }, 500);
+            }
+
+            getRandomRimSound() {
+                const availableSounds = this.rimSounds.filter(sound => sound !== this.lastRimSound);
+                const randomSound = availableSounds[Math.floor(Math.random() * availableSounds.length)];
+                this.lastRimSound = randomSound;
+                return randomSound;
+            }
+
+            getRandomWhipSound() {
+                return this.whipSounds[Math.floor(Math.random() * this.whipSounds.length)];
+            }
+
+            getRandomColor() {
+                const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F'];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            getVariedColor(baseColor) {
+                if (!baseColor || !baseColor.startsWith('#')) {
+                    return this.getRandomColor();
+                }
+
+                const hex = baseColor.slice(1);
+                const r = parseInt(hex.substr(0, 2), 16) / 255;
+                const g = parseInt(hex.substr(2, 2), 16) / 255;
+                const b = parseInt(hex.substr(4, 2), 16) / 255;
+
+                const max = Math.max(r, g, b);
+                const min = Math.min(r, g, b);
+                let h, s, l = (max + min) / 2;
+
+                if (max === min) {
+                    h = s = 0;
+                } else {
+                    const d = max - min;
+                    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                    switch (max) {
+                        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                        case g: h = (b - r) / d + 2; break;
+                        case b: h = (r - g) / d + 4; break;
+                    }
+                    h /= 6;
+                }
+
+                h = (h + (Math.random() - 0.5) * 0.1) % 1;
+                s = Math.max(0, Math.min(1, s + (Math.random() - 0.5) * 0.2));
+                l = Math.max(0.3, Math.min(0.8, l + (Math.random() - 0.5) * 0.2));
+
+                const hsl2rgb = (h, s, l) => {
+                    const a = s * Math.min(l, 1 - l);
+                    const f = n => {
+                        const k = (n + h * 12) % 12;
+                        return l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+                    };
+                    return [Math.round(f(0) * 255), Math.round(f(8) * 255), Math.round(f(4) * 255)];
+                };
+
+                const [newR, newG, newB] = hsl2rgb(h, s, l);
+                return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+            }
+
+            updatePhysics() {
+                if (this.paused) return;
+
+                this.basket.x += this.basket.speed * this.basket.moveDirection;
+                if (this.basket.x <= 50 || this.basket.x >= window.innerWidth - this.basket.width - 50) {
+                    this.basket.moveDirection *= -1;
+                }
+
+                for (let i = this.balls.length - 1; i >= 0; i--) {
+                    const ball = this.balls[i];
+
+                    ball.x += ball.vx;
+                    ball.y += ball.vy;
+                    ball.vy += this.gravity;
+
+                    ball.trailCounter++;
+                    if (ball.trailCounter >= 2) {
+                        this.createTrailElement(ball);
+                        ball.trailCounter = 0;
+                    }
+
+                    ball.element.style.left = (ball.x - ball.visualSize / 2) + 'px';
+                    ball.element.style.top = (ball.y - ball.visualSize / 2) + 'px';
+
+                    if (this.debugMode && ball.debugElement) {
+                        ball.debugElement.textContent = `X:${ball.x.toFixed(0)} Y:${ball.y.toFixed(0)}`;
+                    }
+
+                    if (ball.y > window.innerHeight) {
+                        ball.element.remove();
+                        this.balls.splice(i, 1);
+                        continue;
+                    }
+
+                    if (Math.abs(ball.vx) < 0.1 && Math.abs(ball.vy) < 0.1) {
+                        ball.element.remove();
+                        this.balls.splice(i, 1);
+                        continue;
+                    }
+
+                    if (ball.x - ball.radius <= 0) {
+                        ball.vx = Math.abs(ball.vx) * 0.8;
+                    }
+                    if (ball.x + ball.radius >= window.innerWidth) {
+                        ball.vx = -Math.abs(ball.vx) * 0.8;
+                    }
+                    if (ball.y - ball.radius <= 0) {
+                        ball.vy = Math.abs(ball.vy) * 0.8;
+                    }
+
+                    const basketSnapshot = {
+                        x: this.basket.x,
+                        y: this.basket.y,
+                        width: this.basket.width,
+                        height: this.basket.height
+                    };
+
+                    const rimY = basketSnapshot.y + basketSnapshot.height / 2;
+                    const proximityMargin = 30;
+
+                    const isNearBasket = ball.vy > 0 &&
+                        ball.x >= (basketSnapshot.x - proximityMargin) &&
+                        ball.x <= (basketSnapshot.x + basketSnapshot.width + proximityMargin) &&
+                        ball.y >= (rimY - proximityMargin) &&
+                        ball.y <= (rimY + proximityMargin);
+
+                    if (isNearBasket) {
+                        const hadCollision = this.checkRimCollision(ball, basketSnapshot);
+
+                        if (!hadCollision) {
+                            this.checkNearMiss(ball, basketSnapshot);
+                        }
+
+                        if (!ball.scored) {
+                            this.checkScoring(ball, basketSnapshot);
+                        }
+                    }
+                }
+            }
+
+            checkNearMiss(ball, basket) {
+                const leftRimX = basket.x;
+                const rightRimX = basket.x + basket.width;
+                const rimY = basket.y + basket.height / 2;
+                const rimRadius = 8;
+                const nearMissMargin = 30;
+
+                const leftDx = ball.x - leftRimX;
+                const leftDy = ball.y - rimY;
+                const leftDistance = Math.sqrt(leftDx * leftDx + leftDy * leftDy);
+
+                const rightDx = ball.x - rightRimX;
+                const rightDy = ball.y - rimY;
+                const rightDistance = Math.sqrt(rightDx * rightDx + rightDy * rightDy);
+
+                const collisionDistance = ball.radius + rimRadius;
+                const nearMissDistance = collisionDistance + nearMissMargin;
+
+                const isNearMissLeft = leftDistance > collisionDistance && leftDistance < nearMissDistance;
+                const isNearMissRight = rightDistance > collisionDistance && rightDistance < nearMissDistance;
+
+                if (isNearMissLeft || isNearMissRight) {
+                    this.playSound(this.getRandomWhipSound());
+                    return true;
+                }
+
+                return false;
+            }
+
+            checkRimCollision(ball, basket) {
+                const leftRimX = basket.x;
+                const rightRimX = basket.x + basket.width;
+                const rimY = basket.y + basket.height / 2;
+                const rimRadius = 8;
+
+                const currentTime = Date.now();
+                const bounceThreshold = 100;
+
+                const leftDx = ball.x - leftRimX;
+                const leftDy = ball.y - rimY;
+                const leftDistance = Math.sqrt(leftDx * leftDx + leftDy * leftDy);
+
+                if (leftDistance < ball.radius + rimRadius) {
+                    const normalX = leftDx / leftDistance;
+                    const normalY = leftDy / leftDistance;
+
+                    const dotProduct = ball.vx * normalX + ball.vy * normalY;
+                    ball.vx = ball.vx - 2 * dotProduct * normalX;
+                    ball.vy = ball.vy - 2 * dotProduct * normalY;
+
+                    ball.vx *= 0.7;
+                    ball.vy *= 0.7;
+
+                    const overlap = ball.radius + rimRadius - leftDistance;
+                    ball.x += normalX * overlap;
+                    ball.y += normalY * overlap;
+
+                    if (currentTime - ball.lastRimBounce > bounceThreshold) {
+                        this.playSound(this.getRandomRimSound());
+                        ball.lastRimBounce = currentTime;
+                    }
+
+                    return true;
+                }
+
+                const rightDx = ball.x - rightRimX;
+                const rightDy = ball.y - rimY;
+                const rightDistance = Math.sqrt(rightDx * rightDx + rightDy * rightDy);
+
+                if (rightDistance < ball.radius + rimRadius) {
+                    const normalX = rightDx / rightDistance;
+                    const normalY = rightDy / rightDistance;
+
+                    const dotProduct = ball.vx * normalX + ball.vy * normalY;
+                    ball.vx = ball.vx - 2 * dotProduct * normalX;
+                    ball.vy = ball.vy - 2 * dotProduct * normalY;
+
+                    ball.vx *= 0.7;
+                    ball.vy *= 0.7;
+
+                    const overlap = ball.radius + rimRadius - rightDistance;
+                    ball.x += normalX * overlap;
+                    ball.y += normalY * overlap;
+
+                    if (currentTime - ball.lastRimBounce > bounceThreshold) {
+                        this.playSound(this.getRandomRimSound());
+                        ball.lastRimBounce = currentTime;
+                    }
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            checkScoring(ball, basket) {
+                const rimMargin = 15;
+                const leftScoringX = basket.x + rimMargin;
+                const rightScoringX = basket.x + basket.width - rimMargin;
+                const rimY = basket.y + basket.height / 2;
+                const scoringZoneHeight = 30;
+
+                if (!ball.prevY) ball.prevY = ball.y;
+
+                if (ball.vy <= 0) {
+                    ball.prevY = ball.y;
+                    return false;
+                }
+
+                const isInScoringZoneX = ball.x > leftScoringX && ball.x < rightScoringX;
+                if (!isInScoringZoneX) {
+                    ball.prevY = ball.y;
+                    return false;
+                }
+
+                const isPassingThrough = ball.prevY < rimY && ball.y >= rimY;
+                const isInScoringZoneY = ball.y >= rimY && ball.y <= rimY + scoringZoneHeight;
+
+                ball.prevY = ball.y;
+
+                if (isPassingThrough && isInScoringZoneY) {
+                    ball.scored = true;
+                    this.score++;
+                    this.updateScore();
+                    this.playSound('score');
+                    this.recordScore(ball.username, ball.displayName, ball.userColor);
+                    return true;
+                }
+
+                return false;
+            }
+
+            updateScore() {
+                const percentage = this.attempts > 0 ? Math.round((this.score / this.attempts) * 100) : 0;
+                console.log(`Score: ${this.score}/${this.attempts} (${percentage}%)`);
+            }
+
+            draw() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                this.drawBasket();
+                if (this.debugMode) {
+                    this.drawDebugZones();
+                }
+
+                if (this.paused) {
+                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                    this.ctx.fillStyle = '#FFFF00';
+                    this.ctx.font = 'bold 60px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText('PAUSED', this.canvas.width / 2, this.canvas.height / 2);
+
+                    this.ctx.font = '24px Arial';
+                    this.ctx.fillText('Press SPACE to resume', this.canvas.width / 2, this.canvas.height / 2 + 50);
+                }
+            }
+
+            drawDebugZones() {
+                const basket = this.basket;
+                const centerY = basket.y + basket.height / 2;
+                const rimRadius = 8;
+                const rimMargin = 15;
+
+                this.ctx.save();
+
+                this.ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
+                this.ctx.lineWidth = 2;
+                this.ctx.setLineDash([5, 5]);
+                this.ctx.strokeRect(basket.x - 30, centerY - 30, basket.width + 60, 60);
+
+                this.ctx.strokeStyle = 'rgba(0, 255, 0, 0.7)';
+                this.ctx.lineWidth = 2;
+                this.ctx.setLineDash([3, 3]);
+                this.ctx.strokeRect(basket.x + rimMargin, centerY, basket.width - (rimMargin * 2), 30);
+
+                this.ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+                this.ctx.lineWidth = 2;
+                this.ctx.setLineDash([]);
+                this.ctx.beginPath();
+                this.ctx.arc(basket.x, centerY, rimRadius + 12, 0, Math.PI * 2);
+                this.ctx.stroke();
+
+                this.ctx.beginPath();
+                this.ctx.arc(basket.x + basket.width, centerY, rimRadius + 12, 0, Math.PI * 2);
+                this.ctx.stroke();
+
+                this.ctx.strokeStyle = 'rgba(0, 255, 255, 0.6)';
+                this.ctx.lineWidth = 1;
+                this.ctx.setLineDash([2, 2]);
+                this.ctx.beginPath();
+                this.ctx.moveTo(basket.x - 20, centerY);
+                this.ctx.lineTo(basket.x + basket.width + 20, centerY);
+                this.ctx.stroke();
+
+                this.ctx.restore();
+            }
+
+            drawBasket() {
+                const basket = this.basket;
+                const centerY = basket.y + basket.height / 2;
+
+                this.ctx.strokeStyle = '#ff6600';
+                this.ctx.lineWidth = 8;
+                this.ctx.beginPath();
+                this.ctx.moveTo(basket.x, centerY);
+                this.ctx.lineTo(basket.x + basket.width, centerY);
+                this.ctx.stroke();
+
+                this.ctx.fillStyle = '#cc4400';
+                this.ctx.beginPath();
+                this.ctx.arc(basket.x, centerY, 8, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                this.ctx.beginPath();
+                this.ctx.arc(basket.x + basket.width, centerY, 8, 0, Math.PI * 2);
+                this.ctx.fill();
+
+                this.ctx.strokeStyle = '#ffffff';
+                this.ctx.lineWidth = 2;
+                const netStrands = 8;
+                const netStartX = basket.x + 15;
+                const netEndX = basket.x + basket.width - 15;
+
+                for (let i = 0; i < netStrands; i++) {
+                    const x = netStartX + (i / (netStrands - 1)) * (netEndX - netStartX);
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, centerY);
+                    this.ctx.lineTo(x, centerY + 30);
+                    this.ctx.stroke();
+                }
+
+                if (this.debugMode) {
+                    this.ctx.font = '14px monospace';
+                    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                    this.ctx.textAlign = 'center';
+                    const basketCenterX = basket.x + basket.width / 2;
+                    this.ctx.fillText(`Basket X:${basket.x.toFixed(0)} Y:${basket.y.toFixed(0)}`, basketCenterX, centerY - 25);
+                }
+            }
+
+            gameLoop() {
+                this.updatePhysics();
+                this.draw();
+                requestAnimationFrame(() => this.gameLoop());
+            }
+        }
+
+        window.addEventListener('load', () => {
+            applyBackground();
+            console.log('Page loaded, starting game...');
+            const game = new SimpleBasketGame();
+
+            // Settings panel toggle
+            const settingsBtn   = document.getElementById('settingsBtn');
+            const settingsPanel = document.getElementById('settingsPanel');
+
+            settingsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                settingsPanel.classList.toggle('open');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!settingsPanel.contains(e.target)) {
+                    settingsPanel.classList.remove('open');
+                }
+            });
+
+            // Sync toggle states from loaded soundCategories
+            const toggleMap = {
+                'snd-throw':     'throw',
+                'snd-nearmiss':  'nearmiss',
+                'snd-rimbounce': 'rimbounce',
+                'snd-score':     'score',
+            };
+
+            Object.entries(toggleMap).forEach(([id, category]) => {
+                const checkbox = document.getElementById(id);
+                checkbox.checked = game.soundCategories[category];
+                checkbox.addEventListener('change', () => {
+                    game.soundCategories[category] = checkbox.checked;
+                    localStorage.setItem('chat-hoops-sound-categories',
+                        JSON.stringify(game.soundCategories));
+                });
+            });
+
+            // On refresh, show click-to-resume overlay to unlock audio
+            const resumeOverlay = document.getElementById('resumeOverlay');
+
+            function unlockAudio() {
+                Object.values(game.sounds).forEach(sd => {
+                    sd.audio.muted = true;
+                    sd.audio.play().then(() => {
+                        sd.audio.pause();
+                        sd.audio.muted = false;
+                        sd.audio.currentTime = 0;
+                    }).catch(() => {});
+                });
+            }
+
+            function showStartOverlay() {
+                game.ready = false;
+                resumeOverlay.classList.add('active');
+                resumeOverlay.addEventListener('click', () => {
+                    unlockAudio();
+                    game.ready = true;
+                    resumeOverlay.classList.remove('active');
+                }, { once: true });
+            }
+
+            showStartOverlay();
+
+            // End round / new round
+            document.getElementById('endRoundBtn').addEventListener('click', () => {
+                game.startEndRoundCountdown();
+                document.getElementById('endRoundBtn').disabled = true;
+            });
+
+            document.getElementById('newRoundBtn').addEventListener('click', () => {
+                game.startNewRound();
+                showStartOverlay();
+            });
+        });
+    </script>
+</body>
+</html>
